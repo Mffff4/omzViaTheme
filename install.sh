@@ -4,7 +4,12 @@ set -e
 
 OS="$(uname -s)"
 case "$OS" in
-    Darwin)  SED_EXT="";;
+    Darwin)  
+        SED_EXT=""
+        if [ "$(id -u)" -eq 0 ]; then
+            err "На macOS нельзя запускать скрипт от пользователя root. Пожалуйста, запустите его от обычного пользователя."
+        fi
+        ;;
     Linux)   SED_EXT="";;
     *)       err "OS $OS not supported";;
 esac
@@ -20,7 +25,7 @@ info() { echo -e "${CYAN}[→]${NC} $1"; }
 warn() { echo -e "${YELLOW}[!]${NC} $1"; }
 err()  { echo -e "${RED}[✗]${NC} $1"; exit 1; }
 
-info "Устанавливаем зависимости (zsh, git, curl)..."
+info "Устанавливаем зависимости (zsh, git, curl, coreutils)..."
 if [ "$OS" = "Darwin" ]; then
     if ! command -v brew >/dev/null 2>&1; then
         warn "Homebrew не найден, устанавливаем..."
@@ -39,9 +44,13 @@ elif [ "$OS" = "Linux" ]; then
 fi
 log "Зависимости установлены"
 
-if [ -d "$HOME/.oh-my-zsh" ]; then
-    warn "Oh My Zsh уже установлен, пропускаем..."
+if [ -d "$HOME/.oh-my-zsh" ] && [ -f "$HOME/.oh-my-zsh/oh-my-zsh.sh" ]; then
+    warn "Oh My Zsh уже установлен (~/.oh-my-zsh), пропускаем..."
 else
+    if [ -d "$HOME/.oh-my-zsh" ]; then
+        warn "Обнаружена недоустановленная или поврежденная папка .oh-my-zsh. Удаляем её..."
+        rm -rf "$HOME/.oh-my-zsh"
+    fi
     info "Устанавливаем Oh My Zsh (unattended)..."
     RUNZSH=no CHSH=no \
         sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
