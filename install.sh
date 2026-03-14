@@ -26,7 +26,7 @@ if [ "$OS" = "Darwin" ]; then
         warn "Homebrew не найден, устанавливаем..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
-    brew install zsh git curl
+    brew install zsh git curl coreutils
 elif [ "$OS" = "Linux" ]; then
     if command -v apt-get >/dev/null 2>&1; then
         sudo apt-get update -q
