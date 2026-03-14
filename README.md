@@ -2,7 +2,7 @@
 
 Универсальный скрипт для автоматической настройки **Oh My Zsh** с темой **passion** и полезными плагинами. Поддерживает macOS и Linux (Ubuntu, Debian, Fedora и др.).
 
-![Terminal Mockup](https://raw.githubusercontent.com/ChesterYue/ohmyzsh-theme-passion/master/images/passion.png)
+![Terminal Mockup](https://raw.githubusercontent.com/ChesterYue/ohmyzsh-theme-passion/main/demo/demo.png)
 
 ## ✨ Особенности
 
@@ -37,13 +37,17 @@ curl -fsSL https://raw.githubusercontent.com/Mffff4/omzViaTheme/main/install.sh 
 ## 🆘 Решение проблем
 
 ### Ошибка `gdate: command not found`
+
 Эта ошибка может возникать на macOS при первом запуске, если тема уже активна, но `coreutils` еще не установлен. Скрипт установит `coreutils` автоматически, после чего ошибка исчезнет.
 
 ### Ошибка `The $ZSH folder already exists`
+
 Если установка прервалась или вы хотите начать заново, выполните команду для полной очистки:
+
 ```bash
 rm -rf ~/.oh-my-zsh ~/.zshrc
 ```
+
 Затем запустите скрипт установки снова.
 
 ## 📄 Лицензия
