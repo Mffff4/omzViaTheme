@@ -29,15 +29,15 @@ info "Устанавливаем зависимости (zsh, git, curl, coreuti
 if [ "$OS" = "Darwin" ]; then
     if ! command -v brew >/dev/null 2>&1; then
         warn "Homebrew не найден, устанавливаем..."
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" >/dev/null 2>&1
     fi
-    brew install zsh git curl coreutils
+    brew install zsh git curl coreutils >/dev/null 2>&1
 elif [ "$OS" = "Linux" ]; then
     if command -v apt-get >/dev/null 2>&1; then
-        sudo apt-get update -q
-        sudo apt-get install -y zsh git curl
+        sudo apt-get update -qq
+        sudo apt-get install -y zsh git curl >/dev/null 2>&1
     elif command -v dnf >/dev/null 2>&1; then
-        sudo dnf install -y zsh git curl
+        sudo dnf install -y zsh git curl -q >/dev/null 2>&1
     else
         err "Менеджер пакетов не поддерживается. Установите zsh, git, curl вручную."
     fi
@@ -54,7 +54,7 @@ else
     info "Устанавливаем Oh My Zsh (unattended)..."
     RUNZSH=no CHSH=no \
         sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
-        "" --unattended
+        "" --unattended >/dev/null 2>&1
     log "Oh My Zsh установлен"
 fi
 
@@ -68,10 +68,10 @@ if [ -f "$PASSION_THEME" ]; then
     warn "Тема passion уже установлена, пропускаем..."
 else
     TMP_DIR=$(mktemp -d)
-    git clone --depth=1 "$PASSION_REPO" "$TMP_DIR/passion"
+    git clone --depth=1 "$PASSION_REPO" "$TMP_DIR/passion" --quiet
     cp "$TMP_DIR/passion/passion.zsh-theme" "$PASSION_THEME"
     rm -rf "$TMP_DIR"
-    log "Тема passion установлена → $PASSION_THEME"
+    log "Тема passion установлена → passion"
 fi
 
 PLUGIN_DIR="$ZSH_CUSTOM/plugins/zsh-autosuggestions"
@@ -82,7 +82,7 @@ else
     info "Клонируем zsh-autosuggestions..."
     git clone --depth=1 \
         https://github.com/zsh-users/zsh-autosuggestions.git \
-        "$PLUGIN_DIR"
+        "$PLUGIN_DIR" --quiet
     log "zsh-autosuggestions установлен"
 fi
 
@@ -94,7 +94,7 @@ else
     info "Клонируем zsh-syntax-highlighting..."
     git clone --depth=1 \
         https://github.com/zsh-users/zsh-syntax-highlighting.git \
-        "$PLUGIN_DIR"
+        "$PLUGIN_DIR" --quiet
     log "zsh-syntax-highlighting установлен"
 fi
 
