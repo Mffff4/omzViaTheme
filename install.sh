@@ -131,6 +131,12 @@ if [ "$CURRENT_SHELL" = "$ZSH_PATH" ]; then
     warn "zsh уже является shell по умолчанию"
 else
     info "Меняем shell по умолчанию на zsh..."
+    if [ "$OS" = "Darwin" ]; then
+        if ! grep -qxF "$ZSH_PATH" /etc/shells; then
+            info "Добавляем $ZSH_PATH в /etc/shells..."
+            echo "$ZSH_PATH" | sudo tee -a /etc/shells >/dev/null
+        fi
+    fi
     chsh -s "$ZSH_PATH"
     log "Shell по умолчанию: $ZSH_PATH"
 fi
