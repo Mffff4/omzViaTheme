@@ -25,6 +25,40 @@ info() { echo -e "${CYAN}[→]${NC} $1"; }
 warn() { echo -e "${YELLOW}[!]${NC} $1"; }
 err()  { echo -e "${RED}[✗]${NC} $1"; exit 1; }
 
+# Эти переменные позволяют использовать скрипт и без TTY, например через curl | bash.
+# В интерактивном терминале выбор делается в меню ниже.
+INSTALL_DOCKER=${INSTALL_DOCKER:-0}
+INSTALL_TOOLS=${INSTALL_TOOLS:-0}
+
+choose_optional_components() {
+    [ "$OS" = "Linux" ] || return 0
+    [ -r /dev/tty ] || return 0
+
+    echo ""
+    echo -e "${CYAN}Дополнительные компоненты:${NC}"
+    echo "  1) Docker Engine + Compose"
+    echo "  2) Инструменты сервера (htop, tmux, unzip, ncdu)"
+    echo "  3) Docker + инструменты сервера"
+    echo "  Enter) Только базовая настройка"
+    printf "Выбери через пробел (например: 1 или 1 2): " >/dev/tty
+    if ! read -r selected </dev/tty; then
+        warn "Не удалось прочитать выбор — ставим только базовую настройку"
+        return 0
+    fi
+
+    case " $selected " in
+        *" 1 "*) INSTALL_DOCKER=1 ;;
+    esac
+    case " $selected " in
+        *" 2 "*) INSTALL_TOOLS=1 ;;
+    esac
+    case " $selected " in
+        *" 3 "*) INSTALL_DOCKER=1; INSTALL_TOOLS=1 ;;
+    esac
+}
+
+choose_optional_components
+
 if [ "$OS" = "Linux" ]; then
     if ! command -v sudo >/dev/null 2>&1; then
         err "Для установки зависимостей нужен sudo. Установите sudo или запустите подготовку сервера от root."
@@ -52,7 +86,21 @@ elif [ "$OS" = "Linux" ]; then
 fi
 log "Базовые зависимости установлены"
 
-if [ "$OS" = "Linux" ] && command -v apt-get >/dev/null 2>&1; then
+if [ "$OS" = "Linux" ] && [ "$INSTALL_TOOLS" = "1" ]; then
+    if command -v apt-get >/dev/null 2>&1; then
+        info "Устанавливаем инструменты сервера (htop, tmux, unzip, ncdu)..."
+        sudo apt-get install -y htop tmux unzip ncdu >/dev/null
+        log "Инструменты сервера установлены"
+    elif command -v dnf >/dev/null 2>&1; then
+        info "Устанавливаем инструменты сервера (htop, tmux, unzip, ncdu)..."
+        sudo dnf install -y htop tmux unzip ncdu -q
+        log "Инструменты сервера установлены"
+    else
+        warn "Не удалось определить менеджер пакетов для дополнительных инструментов"
+    fi
+fi
+
+if [ "$OS" = "Linux" ] && [ "$INSTALL_DOCKER" = "1" ] && command -v apt-get >/dev/null 2>&1; then
     if command -v docker >/dev/null 2>&1; then
         log "Docker уже установлен, пропускаем"
     else
