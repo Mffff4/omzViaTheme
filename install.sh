@@ -25,24 +25,56 @@ info() { echo -e "${CYAN}[→]${NC} $1"; }
 warn() { echo -e "${YELLOW}[!]${NC} $1"; }
 err()  { echo -e "${RED}[✗]${NC} $1"; exit 1; }
 
-info "Устанавливаем зависимости (zsh, git, curl, coreutils)..."
+if [ "$OS" = "Linux" ]; then
+    if ! command -v sudo >/dev/null 2>&1; then
+        err "Для установки зависимостей нужен sudo. Установите sudo или запустите подготовку сервера от root."
+    fi
+    info "Проверяем доступ sudo (пароль потребуется один раз)..."
+    sudo -v
+fi
+
+info "Устанавливаем зависимости (zsh, git, curl, vim, ca-certificates, gnupg)..."
 if [ "$OS" = "Darwin" ]; then
     if ! command -v brew >/dev/null 2>&1; then
         warn "Homebrew не найден, устанавливаем..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" >/dev/null 2>&1
     fi
-    brew install zsh git curl coreutils >/dev/null 2>&1
+    brew install zsh git curl coreutils vim gnupg >/dev/null 2>&1
 elif [ "$OS" = "Linux" ]; then
     if command -v apt-get >/dev/null 2>&1; then
         sudo apt-get update -qq
-        sudo apt-get install -y zsh git curl >/dev/null 2>&1
+        sudo apt-get install -y zsh git curl vim ca-certificates gnupg >/dev/null
     elif command -v dnf >/dev/null 2>&1; then
-        sudo dnf install -y zsh git curl -q >/dev/null 2>&1
+        sudo dnf install -y zsh git curl vim ca-certificates gnupg2 -q
     else
-        err "Менеджер пакетов не поддерживается. Установите zsh, git, curl вручную."
+        err "Менеджер пакетов не поддерживается. Установите zsh, git, curl, vim и gnupg вручную."
     fi
 fi
-log "Зависимости установлены"
+log "Базовые зависимости установлены"
+
+if [ "$OS" = "Linux" ] && command -v apt-get >/dev/null 2>&1; then
+    if command -v docker >/dev/null 2>&1; then
+        log "Docker уже установлен, пропускаем"
+    else
+        info "Устанавливаем Docker Engine из официального репозитория..."
+        sudo install -m 0755 -d /etc/apt/keyrings
+        if [ ! -f /etc/apt/keyrings/docker.asc ]; then
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.asc
+            sudo chmod a+r /etc/apt/keyrings/docker.asc
+        fi
+        . /etc/os-release
+        ARCH=$(dpkg --print-architecture)
+        CODENAME=${VERSION_CODENAME:-$UBUNTU_CODENAME}
+        printf 'deb [arch=%s signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu %s stable\n' "$ARCH" "$CODENAME" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+        sudo apt-get update -qq
+        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin >/dev/null
+        log "Docker Engine установлен"
+    fi
+    if command -v docker >/dev/null 2>&1 && ! id -nG "$USER" | tr ' ' '\n' | grep -qx docker; then
+        sudo usermod -aG docker "$USER"
+        warn "Пользователь $USER добавлен в группу docker — перелогинься, чтобы запускать Docker без sudo"
+    fi
+fi
 
 if [ -d "$HOME/.oh-my-zsh" ] && [ -f "$HOME/.oh-my-zsh/oh-my-zsh.sh" ]; then
     warn "Oh My Zsh уже установлен (~/.oh-my-zsh), пропускаем..."
@@ -52,9 +84,9 @@ else
         rm -rf "$HOME/.oh-my-zsh"
     fi
     info "Устанавливаем Oh My Zsh (unattended)..."
-    RUNZSH=no CHSH=no \
+    RUNZSH=no CHSH=no REMOTE="https://github.com/ohmyzsh/ohmyzsh.git" GIT_TERMINAL_PROMPT=0 \
         sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
-        "" --unattended >/dev/null 2>&1
+        "" --unattended
     log "Oh My Zsh установлен"
 fi
 
@@ -68,7 +100,7 @@ if [ -f "$PASSION_THEME" ]; then
     warn "Тема passion уже установлена, пропускаем..."
 else
     TMP_DIR=$(mktemp -d)
-    git clone --depth=1 "$PASSION_REPO" "$TMP_DIR/passion" --quiet
+    GIT_TERMINAL_PROMPT=0 git clone --depth=1 "$PASSION_REPO" "$TMP_DIR/passion"
     cp "$TMP_DIR/passion/passion.zsh-theme" "$PASSION_THEME"
     rm -rf "$TMP_DIR"
     log "Тема passion установлена → passion"
@@ -77,24 +109,24 @@ fi
 PLUGIN_DIR="$ZSH_CUSTOM/plugins/zsh-autosuggestions"
 if [ -d "$PLUGIN_DIR" ]; then
     warn "zsh-autosuggestions уже установлен, обновляем..."
-    git -C "$PLUGIN_DIR" pull --quiet
+    GIT_TERMINAL_PROMPT=0 git -C "$PLUGIN_DIR" pull
 else
     info "Клонируем zsh-autosuggestions..."
-    git clone --depth=1 \
+    GIT_TERMINAL_PROMPT=0 git clone --depth=1 \
         https://github.com/zsh-users/zsh-autosuggestions.git \
-        "$PLUGIN_DIR" --quiet
+        "$PLUGIN_DIR"
     log "zsh-autosuggestions установлен"
 fi
 
 PLUGIN_DIR="$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
 if [ -d "$PLUGIN_DIR" ]; then
     warn "zsh-syntax-highlighting уже установлен, обновляем..."
-    git -C "$PLUGIN_DIR" pull --quiet
+    GIT_TERMINAL_PROMPT=0 git -C "$PLUGIN_DIR" pull
 else
     info "Клонируем zsh-syntax-highlighting..."
-    git clone --depth=1 \
+    GIT_TERMINAL_PROMPT=0 git clone --depth=1 \
         https://github.com/zsh-users/zsh-syntax-highlighting.git \
-        "$PLUGIN_DIR" --quiet
+        "$PLUGIN_DIR"
     log "zsh-syntax-highlighting установлен"
 fi
 
@@ -146,8 +178,11 @@ else
             echo "$ZSH_PATH" | sudo tee -a /etc/shells >/dev/null
         fi
     fi
-    chsh -s "$ZSH_PATH"
-    log "Shell по умолчанию: $ZSH_PATH"
+    if sudo chsh -s "$ZSH_PATH" "$USER"; then
+        log "Shell по умолчанию: $ZSH_PATH"
+    else
+        err "Не удалось сменить shell. Проверь sudo-доступ и повтори: sudo chsh -s $ZSH_PATH $USER"
+    fi
 fi
 
 echo ""
