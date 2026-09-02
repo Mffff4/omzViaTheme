@@ -14,4 +14,7 @@ contains '/etc/apt/keyrings/docker.asc'
 contains 'https://download.docker.com/linux/ubuntu'
 contains 'vim ca-certificates gnupg'
 contains 'GIT_TERMINAL_PROMPT=0'
+if grep -Fq 'git -C "$PLUGIN_DIR" pull' "$script"; then
+  fail 'existing plugins must be skipped rather than updated'
+fi
 printf 'install.sh behavioral checks: passed\n'

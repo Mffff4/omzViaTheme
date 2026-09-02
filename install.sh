@@ -108,8 +108,7 @@ fi
 
 PLUGIN_DIR="$ZSH_CUSTOM/plugins/zsh-autosuggestions"
 if [ -d "$PLUGIN_DIR" ]; then
-    warn "zsh-autosuggestions уже установлен, обновляем..."
-    GIT_TERMINAL_PROMPT=0 git -C "$PLUGIN_DIR" pull
+    log "zsh-autosuggestions уже установлен, пропускаем"
 else
     info "Клонируем zsh-autosuggestions..."
     GIT_TERMINAL_PROMPT=0 git clone --depth=1 \
@@ -120,8 +119,7 @@ fi
 
 PLUGIN_DIR="$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
 if [ -d "$PLUGIN_DIR" ]; then
-    warn "zsh-syntax-highlighting уже установлен, обновляем..."
-    GIT_TERMINAL_PROMPT=0 git -C "$PLUGIN_DIR" pull
+    log "zsh-syntax-highlighting уже установлен, пропускаем"
 else
     info "Клонируем zsh-syntax-highlighting..."
     GIT_TERMINAL_PROMPT=0 git clone --depth=1 \
